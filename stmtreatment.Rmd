@@ -1,0 +1,174 @@
+---
+title: "stmgame"
+author: "minwoo ahn"
+date: "2023-06-07"
+output: html_document
+------
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+```
+##https://github.com/dondealban/learning-stm
+
+
+##lag communication
+```{r}
+library(dplyr)
+
+#add new column that shows sales for previous day
+GGcommunicationdata_mw_060723$lag_communication <- dplyr::lag(GGcommunicationdata_mw_060723$text)
+
+```
+
+## stm installation
+```{r}
+library(stm)
+library (igraph)
+library (stmCorrViz)
+```
+
+##open in MAC
+```{r}
+data <- read.csv("GGcommunicationdata_mw_060723.csv")
+```
+
+##stemming and stopword removal
+```{r}
+processed <- textProcessor(GGcommunicationdata_mw_060723$lag_communication, metadata = GGcommunicationdata_mw_060723)
+```
+
+##structure and index the data for usage in the stm
+```{r}
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta)
+```
+
+##save the output object meta, documents, and vocab into variables
+```{r}
+docs <- out$documents
+vocab <- out$vocab
+meta <- out$meta
+```
+
+##check removed words and documents
+```{r}
+plotRemoved(processed$documents, lower.thresh = seq(1,200, by=100))
+```
+
+##estimation (1).prevalance of topics across documents' meta data
+```{r}
+communicationfit <- stm(out$documents, out$vocab, K=5, prevalence = ~treatment, data = out$meta, max.em.its=75, init.type = "Spectral", seed = 8458150)
+
+```
+##plot the model
+```{r}
+plot(communicationfit, type = "summary", xlim = c(0,1))
+```
+
+##frequent words in topics
+```{r}
+plot(communicationfit, type = "labels", topics = c(3,4))
+
+```
+
+##histrogram of topics
+```{r}
+plot(communicationfit, type = "hist")
+```
+
+##comparison of two topics
+```{r}
+plot(communicationfit, type = "perspectives", topics = c(2,4))
+```
+
+##evaluate
+```{r}
+communicationSelect <- selectModel(out$documents, out$vocab, K=10, prevalence = ~cooperation+round, max.em.its=30, data = meta, runs=20, seed=8458159)
+```
+
+##plot different models
+```{r}
+plotModels(communicationSelect)
+
+```
+
+##plot topic quality
+```{r}
+topicQuality(model = communicationfit, documents = docs)
+
+```
+
+##exemplary quote
+```{r}
+**https://rdrr.io/cran/stm/man/findThoughts.html
+thoughts3 <- findThoughts(communicationfit, n=3, topics=3)$docs[[1]]
+plotQuote(thoughts3, width=40, main="Topic 3")
+```
+
+
+##choose model 1
+```{r}
+selectModel1 <- communicationSelect$runout [[1]]
+```
+
+##understand
+```{r}
+labelTopicSel <- labelTopics(poliblogPrevFit, c(3,20))
+print(sageLabels(poliblogPrevFit))
+```
+
+##estimation
+```{r}
+out$meta$rating <- as.factor(out$meta$rating)
+prep <- estimateEffect(1:5 ~ treatment, communicationfit, meta=out$meta, 
+                       uncertainty="Global")
+```
+
+##plotting
+```{r}
+plot(prep, covariate="treatment", topics=c(3,4), model=communicationfit, method = "difference", cov.value1 = "0", cov.value2 = "2", xlab =  "complete information ... competing hydrology", main = "communication and treatment", xlim = c(-0.5,.5), labeltype = "custom", custom.labels = c("strategy_building","longterm_perspecive"))
+                                                                                
+```
+okay. I might need to lag a variable because communication in round 1 should affect crop choice in round 2. 
+
+##how prevalence of topics differ across values of a continuous covariate
+```{r}
+plot(prep, "round", method="continuous", topics=3, model=z, printlegend=FALSE, xaxt="n", 
+     xlab="round (1-10)")
+**need better specification
+roundseq <- seq(from=as.Date("1"), to=as.Date("10"), by="round")
+monthnames <- months(monthseq)
+axis(1, at=as.numeric(monthseq)-min(as.numeric(monthseq)), labels=monthnames)
+```
+
+##topic corelation
+```{r}
+mod.out.corr <- topicCorr(communicationfit)
+plot(mod.out.corr)
+```
+
+##
+```{r}
+communicationContent <- stm(out$documents, out$vocab, K=5, prevalence=~cooperation+round, 
+                       content=~cooperation, max.em.its=75, data=out$meta, 
+                       init.type="Spectral", seed=8458159)
+plot(communicationContent, type="perspectives", topics = 4)
+```
+
+##interaction effect
+```{r}
+poliblogInteraction <- stm(out$documents, out$vocab, K=10, prevalence=~rating*day, 
+                           max.em.its=10, data=out$meta, seed=8458159)
+```
+
+##plot interaction
+```{r}
+prep2 <- estimateEffect(c(10) ~ rating*day, poliblogInteraction, metadata=out$meta, 
+                        uncertainty="None")
+plot(prep2, covariate="day", model=poliblogInteraction, method="continuous", xlab="Days",
+     moderator="rating", moderator.value="Liberal", linecol="blue", ylim=c(0,0.12), 
+     printlegend=F)
+plot(prep2, covariate="day", model=poliblogInteraction, method="continuous", xlab="Days",
+     moderator="rating", moderator.value="Conservative", linecol="red", add=T,
+     printlegend=F)
+legend(0,0.12, c("Liberal", "Conservative"), lwd=2, col=c("blue", "red"))
+
+```
