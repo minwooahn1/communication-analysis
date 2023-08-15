@@ -10,6 +10,7 @@ check "https://www.tidytextmining.com/sentiment.html#sentiment" for various sent
 
 ##get lexicons
 ```{r}
+library(tidytext)
 get_sentiments("afinn")
 get_sentiments("bing")
 get_sentiments("nrc")
@@ -18,6 +19,9 @@ get_sentiments("nrc")
 ##tidy data format
 ```{r}
 library(tidytext)
+library(dplyr)
+library(readr)
+GGcommunicationdata_mw_060723 <- read_csv("C:/Users/User/Dropbox/Documents backedup/text analysis/communication analysis/data/GGcommunicationdata_mw_060723.csv")
 tidy_communication <- GGcommunicationdataset_mw_062723 %>%
   unnest_tokens(word, text)
 ```
@@ -36,20 +40,20 @@ tidy_communication %>%
 
 ##sentiment analysis
 ```{r}
-ggsentiment <- tidy_communication %>%
+#ggsentiment <- tidy_communication %>%
   inner_join(get_sentiments("bing"), by = "word", relationship = "many-to-many") %>% 
   count(sentiment, index = round_whole) %>% 
-  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>% 
   mutate(sentiment = positive - negative)
-ggsentiment
+#ggsentiment
 ```
 
 ##visualize
 ```{r}
-library(ggplot2)
-ggplot(ggsentiment, aes(index, sentiment, fill = "blue")) +
-  geom_col(show.legend = FALSE)
+#library(ggplot2)
+#ggplot(ggsentiment, aes(index, sentiment, fill = "blue")) +
+  #geom_col(show.legend = FALSE)
 ```
+
 ##4games
 ```{r}
 library(tidytext)
@@ -70,6 +74,7 @@ tidy_4games %>%
 ```
 ##sentiment analysis of 4games
 ```{r}
+library(tidyr)
 games_sentiment <- tidy_4games %>%
   inner_join(get_sentiments("bing"), by = "word", relationship = "many-to-many") %>% 
   count(Game, index = round_db, sentiment) %>% 
@@ -86,19 +91,19 @@ ggplot(games_sentiment_cleaned, aes(index, sentiment, fill = Game)) +
   facet_wrap(vars(Game), ncol = 2, scales = "free_x")
 ```
 
-##
+##data export as excel file
 ```{r}
-library(dplyr)
-games_sentiment_cleaned <- games_sentiment_cleaned %>%
-  rename(round_db = index)
+#library(dplyr)
+#games_sentiment_cleaned <- games_sentiment_cleaned %>%
+#rename(round_db = index)
 ```
 
 ```{r}
-fourgamesdata <- merge(games_sentiment_cleaned, X4gamesdata_070123, by = c("round_db"))
+#fourgamesdata <- merge(games_sentiment_cleaned, X4gamesdata_070123, by = c("round_db"))
 ```
 
 ```{r}
-install.packages("openxlsx")
-library(openxlsx)
-write.xlsx(fourgamesdata, "fourgamesdata.xlsx")
+#install.packages("openxlsx")
+#library(openxlsx)
+#write.xlsx(fourgamesdata, "fourgamesdata.xlsx")
 ```
