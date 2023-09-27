@@ -1,0 +1,595 @@
+|                       |
+|-----------------------|
+| title: "stmgame"      |
+| author: "minwoo ahn"  |
+| date: "2023-09-27"    |
+| output: html_document |
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Groundwater Game ##lag communication
+###Throughout stm analysis, file name should be checked and properly reflected in the codes.
+####This link well-documented the application of STM. <https://github.com/dondealban/learning-stm>
+####Data upload and packages
+```{r}
+library(dplyr)
+library(stm)
+library (igraph)
+library (stmCorrViz)
+```
+
+##open in Window or MAC
+
+```{r}
+##revise the filename as necessary
+data <- read.csv("xxx.csv")
+```
+
+##stemming and stopword removal
+
+```{r}
+processed <- textProcessor(pom$lag_text, metadata = GGcommunicationdataset_mw_062723)
+```
+
+##structure and index the data for usage in the stm
+
+```{r}
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta)
+```
+
+##save the output object meta, documents, and vocab into variables
+
+```{r}
+docs <- out$documents
+vocab <- out$vocab
+meta <- out$meta
+```
+
+##check removed words and documents
+
+```{r}
+plotRemoved(processed$documents, lower.thresh = seq(1,200, by=100))
+```
+
+##estimation (1).prevalance of topics across documents' meta data
+
+```{r}
+ggfit <- stm(out$documents, out$vocab, K=5, prevalence = ~round+cooperation, data = out$meta, init.type = "Spectral", seed = 8458150)
+
+```
+
+##plot the model
+
+```{r}
+plot(ggfit, type = "summary", xlim = c(0,1))
+```
+
+##frequent words in topics
+
+```{r}
+plot(ggfit, type = "labels", topics = c(3,4))
+plot(ggfit, type = "labels", topics = c(1,2))
+plot(ggfit, type = "labels", topics = c(5))
+
+```
+
+##histrogram of topics
+
+```{r}
+plot(ggfit, type = "hist")
+```
+
+##comparison of two topics
+
+```{r}
+plot(ggfit, type = "perspectives", topics = c(1,2))
+plot(ggfit, type = "perspectives", topics = c(1,4))
+plot(ggfit, type = "perspectives", topics = c(1,3))
+```
+
+##evaluate
+
+```{r}
+ggselect <- selectModel(out$documents, out$vocab, K=10, prevalence = ~cooperation+round, max.em.its=30, data = meta, runs=20, seed=8458159)
+```
+
+##plot different models
+
+```{r}
+plotModels(ggselect)
+
+```
+
+##plot topic quality
+
+```{r}
+topicQuality(model = ggfit, documents = docs)
+```
+
+##label top words
+
+```{r}
+labelTopicsSel <- labelTopics(communicationfit, c(1,3,4))
+print(sageLabels(communicationfit))
+```
+
+##exemplary quote
+
+```{r}
+topic4 <- findThoughts(ggfit, texts=, topics = 4, n=3)
+plot(topic4)
+```
+
+##choose model 3
+
+```{r}
+selectModel2 <- ggselect$runout [[2]]
+```
+
+##estimation
+
+```{r}
+out$meta$rating <- as.factor(out$meta$rating)
+prep <- estimateEffect(1:5 ~ treatment, communicationfit, meta=out$meta, uncertainty="Global")
+prep1 <- estimateEffect(1:5 ~ cooperation+round, ggfit, meta=out$meta, uncertainty="Global")
+
+```
+
+##plotting 1. the effect of scientific uncertainty on communication strategies
+
+```{r}
+plot(prep1, covariate="cooperation", topics=c(1,3,4), model=ggfit, method = "difference", cov.value1 = "0", cov.value2 = "1", xlab =  "less cooperation ... more cooperation", main = "The Effects of Communication on Cooperation", labeltype = "custom", custom.labels = c("collaborative caution","collaboration(shared interest)", "collaborative strategy(coordination)"))
+                                                                                
+```
+
+##plotting 2. the effect of communication on cooperation
+
+```{r}
+plot(prep1, covariate="cooperation", topics = c(1,2,3,4,5), model=communicationfit, method = "difference", cov.value1 = "0", cov.value2 = "1", xlab = "less cooperation ... more cooperation", main = "The effects of communication on cooperation", xlim = c(-0.5,.5), labeltype = "custom", custom.labels = c("strategy1", "strategy2", "strategy3", "strategy4", "strategy5"))
+```
+
+##how prevalence of topics differ across values of a continuous covariate
+
+```{r}
+plot(prep1, "round", method="continuous", topics=1, model=ggfit, printlegend=FALSE, xaxt="n", xlab="round (1-10)")
+plot(prep1, "round", method="continuous", topics=2, model=ggfit, printlegend=FALSE, xaxt="n", xlab="round (1-10)")
+plot(prep1, "round", method="continuous", topics=4, model=ggfit, printlegend=FALSE, xaxt="n", xlab="round (1-10)")
+```
+
+##topic corelation
+
+```{r}
+mod.out.corr <- topicCorr(communicationfit)
+plot(mod.out.corr)
+mod.out.corr <- topicCorr(communicationfit2)
+plot(mod.out.corr)
+```
+
+# POM
+
+### stm installation
+
+```{r}
+library(stm)
+library (igraph)
+library (stmCorrViz)
+```
+
+##open in Window or MAC
+
+```{r}
+##revise the code as necessary
+data <- read.csv("xxx.csv")
+```
+
+##select POM
+
+```{r}
+POMdat <- subset(xxx, Game == "POM")
+```
+
+##stemming and stopword removal
+
+```{r}
+processed <- textProcessor(pom_080323$text, metadata = pom_080323)
+```
+
+##structure and index the data for usage in the stm
+
+```{r}
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta)
+```
+
+##save the output object meta, documents, and vocab into variables
+
+```{r}
+docs <- out$documents
+vocab <- out$vocab
+meta <- out$meta
+```
+
+##check removed words and documents
+
+```{r}
+plotRemoved(processed$documents, lower.thresh = seq(1,200, by=100))
+```
+
+##estimation (1).prevalance of topics across documents' meta data
+
+```{r}
+pomfit <- stm(out$documents, out$vocab, K=5, prevalence = ~Cooperation_index+round, data = out$meta, init.type = "Spectral", seed = 8458150)
+```
+
+##plot the model
+
+```{r}
+plot(pomfit, type = "summary", xlim = c(0,1))
+```
+
+##frequent words in topics
+
+```{r}
+plot(pomfit, type = "labels", topics = c(1,2))
+plot(pomfit, type = "labels", topics = c(3,4))
+plot(pomfit, type = "labels", topics = c(5))
+```
+
+##histrogram of topics
+
+```{r}
+plot(pomfit, type = "hist")
+```
+
+##comparison of two topics
+
+```{r}
+plot(pomfit, type = "perspectives", topics = c(2,3))
+```
+
+##evaluate
+
+```{r}
+pomselect <- selectModel(out$documents, out$vocab, K=10, prevalence = ~Cooperation_index+round, data = meta, runs=20, seed=8458159)
+```
+
+##plot different models
+
+```{r}
+plotModels(pomselect)
+
+```
+
+##plot topic quality
+
+```{r}
+topicQuality(model = pomfit, documents = docs)
+```
+
+##label top words
+
+```{r}
+labelTopicsSel <- labelTopics(pomfit, c(3,4))
+print(sageLabels(pomfit))
+```
+
+##exemplary quote
+
+```{r}
+thoughts2 <- findThoughts(pomfit, texts=text, topics = 2, n = 3)
+plotQuote(thoughts2, main="Topic 2")
+```
+
+##choose model 1
+
+```{r}
+selectModel1 <- pomselect$runout [[1]]
+```
+
+##estimation
+
+```{r}
+prep <- estimateEffect(1:5 ~ Cooperation_index+round, pomfit, meta=out$meta, uncertainty="Global")
+
+```
+
+##plotting 1. the effect of communication on cooperation
+
+```{r}
+plot(prep, covariate="Cooperation_index", topics = c(2,3,4), model=pomfit, method = "difference", cov.value1 = "0", cov.value2 = "2", xlab = "less cooperation ... more cooperation", main = "The effects of communication on cooperation", labeltype = "custom", custom.labels = c("collaborative strategy (system health)", "coordination", "collaborative strategy(trade)"))
+```
+
+##how prevalence of topics differ across values of a continuous covariate
+
+```{r}
+##system health
+plot(prep, "round", method="continuous", topics=2, model=z, printlegend=FALSE, xaxt="n", 
+     xlab="round (1-10)")
+##trade
+plot(prep, "round", method="continuous", topics=4, model=z, printlegend=FALSE, xaxt="n", 
+     xlab="round (1-10)")
+```
+
+##topic corelation
+
+```{r}
+mod.out.corr <- topicCorr(pomfit)
+plot(mod.out.corr)
+```
+
+#irrigation game
+
+##open in Window or MAC
+
+```{r}
+##revise the code as necessary
+data <- read.csv("xxx.csv")
+```
+
+##stemming and stopword removal
+
+```{r}
+processed <- textProcessor(IR080323$text, metadata = IR080323)
+```
+
+##structure and index the data for usage in the stm
+
+```{r}
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta)
+```
+
+##save the output object meta, documents, and vocab into variables
+
+```{r}
+docs <- out$documents
+vocab <- out$vocab
+meta <- out$meta
+```
+
+##check removed words and documents
+
+```{r}
+plotRemoved(processed$documents, lower.thresh = seq(1,200, by=100))
+```
+
+##estimation (1).prevalance of topics across documents' meta data
+
+```{r}
+IRfit <- stm(out$documents, out$vocab, K=5, prevalence = ~Cooperation_index+round, data = out$meta, init.type = "Spectral", seed = 8458150)
+```
+
+##plot the model
+
+```{r}
+plot(IRfit, type = "summary", xlim = c(0,1))
+```
+
+##frequent words in topics
+
+```{r}
+plot(IRfit, type = "labels", topics = c(1,2))
+plot(IRfit, type = "labels", topics = c(3,4))
+plot(IRfit, type = "labels", topics = c(5))
+```
+
+##histrogram of topics
+
+```{r}
+plot(IRfit, type = "hist")
+```
+
+##comparison of two topics
+
+```{r}
+plot(IRfit, type = "perspectives", topics = c(1,4))
+```
+
+##evaluate
+
+```{r}
+IRselect <- selectModel(out$documents, out$vocab, K=10, prevalence = ~Cooperation_index+round, data = meta, seed=8458159)
+```
+
+##plot different models
+
+```{r}
+plotModels(IRselect)
+
+```
+
+##plot topic quality
+
+```{r}
+topicQuality(model = IRfit, documents = docs)
+```
+
+##label top words
+
+```{r}
+labelTopicsSel <- labelTopics(IRfit, c(1,4))
+print(sageLabels(IRfit))
+```
+
+##exemplary quote
+
+```{r}
+thoughts2 <- findThoughts(IRfit, texts=text, n=3, topics=2)$docs[[1]]
+plotQuote(thoughts3, width=40, main="Topic 2")
+```
+
+##choose model 3
+
+```{r}
+selectModel9 <- IRselect$runout [[9]]
+```
+
+##estimation
+
+```{r}
+prep <- estimateEffect(1:5 ~ Cooperation_index+round, IRfit, meta=out$meta, uncertainty="Global")
+
+```
+
+##plotting 1. the effect of communication on cooperation
+
+```{r}
+plot(prep, covariate="Cooperation_index", topics = c(1,2,4,5), model=IRfit, method = "difference", cov.value1 = "0", cov.value2 = "10", xlab = "less cooperation ... more cooperation", main = "The effects of communication on cooperation", labeltype = "custom", custom.labels = c("collaborative strategy(power)", "collaborative strategy(invest)", "collaborative strategy(coordination)", "emotions"))
+```
+
+##how prevalence of topics differ across values of a continuous covariate
+
+```{r}
+##system health
+plot(prep, "round", method="continuous", topics=1, model=z, printlegend=FALSE, xaxt="n", 
+     xlab="round (1-10)")
+##trade
+plot(prep, "round", method="continuous", topics=2, model=z, printlegend=FALSE, xaxt="n", 
+     xlab="round (1-10)")
+```
+
+##topic corelation
+
+```{r}
+mod.out.corr <- topicCorr(pomfit)
+plot(mod.out.corr)
+```
+
+# foraging game
+
+##open in Window or MAC
+
+```{r}
+##revise the code as necessary
+data <- read.csv("xxx.csv")
+```
+
+##stemming and stopword removal
+
+```{r}
+processed <- textProcessor(FOR080723$text, metadata = FOR080723)
+```
+
+##structure and index the data for usage in the stm
+
+```{r}
+out <- prepDocuments(processed$documents, processed$vocab, processed$meta)
+```
+
+##save the output object meta, documents, and vocab into variables
+
+```{r}
+docs <- out$documents
+vocab <- out$vocab
+meta <- out$meta
+```
+
+##check removed words and documents
+
+```{r}
+plotRemoved(processed$documents, lower.thresh = seq(1,200, by=100))
+```
+
+##estimation (1).prevalance of topics across documents' meta data
+
+```{r}
+FORfit <- stm(out$documents, out$vocab, K=5, prevalence = ~Cooperation_index+round, data = out$meta, init.type = "Spectral", seed = 8458150)
+```
+
+##plot the model
+
+```{r}
+plot(FORfit, type = "summary", xlim = c(0,1))
+```
+
+##frequent words in topics
+
+```{r}
+plot(FORfit, type = "labels", topics = c(3,4))
+plot(FORfit, type = "labels", topics = c(2))
+```
+
+##histrogram of topics
+
+```{r}
+plot(FORfit, type = "hist")
+```
+
+##comparison of two topics
+
+```{r}
+plot(FORfit, type = "perspectives", topics = c(3,4))
+plot(FORfit, type = "perspectives", topics = c(2,5))
+```
+
+##evaluate
+
+```{r}
+FORselect <- selectModel(out$documents, out$vocab, K=10, prevalence = ~Cooperation_index+round, data = meta, seed=8458159)
+```
+
+##plot different models
+
+```{r}
+plotModels(FORselect)
+
+```
+
+##plot topic quality
+
+```{r}
+topicQuality(model = FORfit, documents = docs)
+```
+
+##label top words
+
+```{r}
+labelTopicsSel <- labelTopics(FORfit, c(1,4))
+print(sageLabels(FORfit))
+```
+
+##exemplary quote
+
+```{r}
+thoughts2 <- findThoughts(IRfit, texts=text, n=3, topics=2)$docs[[1]]
+plotQuote(thoughts3, width=40, main="Topic 2")
+```
+
+##choose model 1
+
+```{r}
+selectModel1 <- FORselect$runout [[1]]
+```
+
+##estimation
+
+```{r}
+prep <- estimateEffect(1:5 ~ Cooperation_index+round, FORfit, meta=out$meta, uncertainty="Global")
+
+```
+
+##plotting 1. the effect of communication on cooperation
+
+```{r}
+plot(prep, covariate="Cooperation_index", topics = c(2,3,4), model=FORfit, method = "difference", cov.value1 = "200", cov.value2 = "500", xlab = "less cooperation ... more cooperation", main = "The effects of communication on cooperation", labeltype = "custom", custom.labels = c("small wins", "collaborative strategy", "collaborative caution"))
+```
+
+##how prevalence of topics differ across values of a continuous covariate
+
+```{r}
+##small wins
+plot(prep, "round", method="continuous", topics=2, model=z, printlegend=FALSE, xaxt="n", 
+     xlab="round (1-10)")
+##collaborative strategy
+plot(prep, "round", method="continuous", topics=3, model=z, printlegend=FALSE, xaxt="n", 
+     xlab="round (1-10)")
+##collaborative caution
+plot(prep, "round", method="continuous", topics=4, model=z, printlegend=FALSE, xaxt="n", 
+     xlab="round (1-10)")
+```
+
+##topic corelation
+
+```{r}
+mod.out.corr <- topicCorr(FORfit)
+plot(mod.out.corr)
+```
